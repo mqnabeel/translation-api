@@ -1,0 +1,439 @@
+openapi: 3.0.0
+info:
+  title: Translation API
+  description: API for managing translation keys, content, and tags across multiple languages
+  version: 1.0.0
+  contact:
+    email: admin@example.com
+
+servers:
+  - url: http://localhost:8080/api
+    description: Local development server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Translation:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        key:
+          type: string
+          example: welcome_message
+        content:
+          type: string
+          example: Welcome to our application
+        locale:
+          type: string
+          example: en
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+    
+    Tag:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: homepage
+        description:
+          type: string
+          example: Homepage translations
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          example: An error occurred
+        error:
+          type: string
+          example: Error details
+    
+    CreateTranslation:
+      type: object
+      required:
+        - key
+        - content
+        - locale
+      properties:
+        key:
+          type: string
+          example: welcome_message
+        content:
+          type: string
+          example: Welcome to our application
+        locale:
+          type: string
+          example: en
+        tags:
+          type: array
+          items:
+            type: integer
+          example: [1, 2]
+    
+    UpdateTranslation:
+      type: object
+      properties:
+        content:
+          type: string
+          example: Updated welcome message
+        tags:
+          type: array
+          items:
+            type: integer
+          example: [1, 2, 3]
+    
+    TranslationsList:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Translations retrieved successfully
+        data:
+          type: object
+          properties:
+            current_page:
+              type: integer
+              example: 1
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Translation'
+            first_page_url:
+              type: string
+              example: http://localhost/api/translations?page=1
+            from:
+              type: integer
+              example: 1
+            last_page:
+              type: integer
+              example: 5
+            last_page_url:
+              type: string
+              example: http://localhost/api/translations?page=5
+            links:
+              type: array
+              items:
+                type: object
+                properties:
+                  url:
+                    type: string
+                  label:
+                    type: string
+                  active:
+                    type: boolean
+            next_page_url:
+              type: string
+              example: http://localhost/api/translations?page=2
+            path:
+              type: string
+              example: http://localhost/api/translations
+            per_page:
+              type: integer
+              example: 10
+            prev_page_url:
+              type: string
+              nullable: true
+            to:
+              type: integer
+              example: 10
+            total:
+              type: integer
+              example: 50
+
+security:
+  - bearerAuth: []
+
+paths:
+  /translations:
+    get:
+      summary: List all translations
+      description: Returns a paginated list of translations
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranslationsList'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      summary: Create a new translation
+      description: Create a new translation with the provided data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTranslation'
+      responses:
+        '201':
+          description: Translation created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Translation created successfully
+                  data:
+                    $ref: '#/components/schemas/Translation'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /translations/{id}:
+    get:
+      summary: Get a specific translation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Translation retrieved successfully
+                  data:
+                    $ref: '#/components/schemas/Translation'
+        '404':
+          description: Translation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      summary: Update a translation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTranslation'
+      responses:
+        '200':
+          description: Translation updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Translation updated successfully
+                  data:
+                    $ref: '#/components/schemas/Translation'
+        '404':
+          description: Translation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      summary: Delete a translation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Translation deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Translation deleted successfully
+        '404':
+          description: Translation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /translations/export:
+    get:
+      summary: Export translations
+      description: Export translations for a specific locale
+      parameters:
+        - name: locale
+          in: query
+          description: Language locale (e.g., en, fr, es)
+          required: false
+          schema:
+            type: string
+            default: en
+      responses:
+        '200':
+          description: Successful export
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Key-value pairs of translations
+                example:
+                  welcome_message: Welcome to our application
+                  goodbye_message: Thank you for using our application
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Export failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /translations/search:
+    get:
+      summary: Search translations
+      description: Search translations by key, content or tags
+      parameters:
+        - name: key
+          in: query
+          description: Search by translation key
+          required: false
+          schema:
+            type: string
+        - name: content
+          in: query
+          description: Search by translation content
+          required: false
+          schema:
+            type: string
+        - name: tag
+          in: query
+          description: Search by tag ID
+          required: false
+          schema:
+            type: integer
+        - name: locale
+          in: query
+          description: Filter by locale
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranslationsList'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error' 
